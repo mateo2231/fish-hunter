@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
-import { ENEMY_TYPES } from '../config/enemies.js';
+import { ENEMY_TYPES, getEnemiesForBiome } from '../config/enemies.js';
 import { getAvailableEvolutions } from '../config/evolutions.js';
+import { BIOMES, BIOME_ORDER, getBiomeAtY, getSpawnRangeForBiome } from '../config/biomes.js';
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -66,24 +67,129 @@ export class GameScene extends Phaser.Scene {
 
         // Can evolve flag
         this.canEvolve = false;
+
+        // Track current biome
+        this.currentBiome = null;
+        this.biomeIndicator = null;
+        this.createBiomeIndicator();
+
+        // Create biome lighting overlay
+        this.createBiomeLighting();
+    }
+
+    createBiomeIndicator() {
+        // Biome name indicator (top center)
+        this.biomeIndicator = this.add.container(400, 50);
+        this.biomeIndicator.setScrollFactor(0);
+        this.biomeIndicator.setDepth(100);
+        this.biomeIndicator.setAlpha(0);
+
+        // Background
+        const indicatorBg = this.add.graphics();
+        indicatorBg.fillStyle(0x000000, 0.6);
+        indicatorBg.fillRoundedRect(-120, -20, 240, 40, 12);
+        this.biomeIndicator.add(indicatorBg);
+
+        // Biome name text
+        this.biomeNameText = this.add.text(0, 0, '', {
+            fontFamily: 'Arial Black',
+            fontSize: '16px',
+            fill: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        this.biomeIndicator.add(this.biomeNameText);
+    }
+
+    createBiomeLighting() {
+        // Dark vignette overlay for deep biomes
+        this.vignetteOverlay = this.add.graphics();
+        this.vignetteOverlay.setScrollFactor(0);
+        this.vignetteOverlay.setDepth(50);
+        this.updateBiomeLighting(1.0); // Start with full brightness
+    }
+
+    updateBiomeLighting(brightness) {
+        this.vignetteOverlay.clear();
+
+        if (brightness >= 1.0) return; // No overlay needed
+
+        const darkness = 1 - brightness;
+
+        // Create vignette effect
+        const width = 800;
+        const height = 600;
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        // Radial gradient vignette (darker at edges)
+        for (let i = 10; i > 0; i--) {
+            const ratio = i / 10;
+            const alpha = darkness * ratio * 0.7;
+            this.vignetteOverlay.fillStyle(0x000011, alpha);
+            this.vignetteOverlay.fillEllipse(centerX, centerY, width * (1.2 - ratio * 0.4), height * (1.2 - ratio * 0.4));
+        }
+
+        // Add subtle blue tint for deep water
+        if (brightness < 0.5) {
+            this.vignetteOverlay.fillStyle(0x000033, (0.5 - brightness) * 0.3);
+            this.vignetteOverlay.fillRect(0, 0, width, height);
+        }
+    }
+
+    showBiomeIndicator(biome) {
+        if (this.currentBiome === biome.id) return;
+
+        this.currentBiome = biome.id;
+        this.biomeNameText.setText(biome.name);
+
+        // Color based on biome
+        const biomeColors = {
+            surface: '#4a9fff',
+            reef: '#20b2aa',
+            thermocline: '#1a6b8a',
+            bathyal: '#6644aa',
+            abyss: '#aa4488'
+        };
+        this.biomeNameText.setColor(biomeColors[biome.id] || '#ffffff');
+
+        // Fade in, stay, fade out
+        this.tweens.killTweensOf(this.biomeIndicator);
+        this.biomeIndicator.setAlpha(0);
+        this.tweens.add({
+            targets: this.biomeIndicator,
+            alpha: 1,
+            duration: 300,
+            hold: 2000,
+            yoyo: true,
+            ease: 'Sine.inOut'
+        });
+
+        // Update lighting
+        this.updateBiomeLighting(biome.brightness);
     }
 
     createBackground() {
-        // Ocean gradient background with smoother transition
+        // Biome-layered background
         const bg = this.add.graphics();
 
-        // Create smoother layered blue gradient (surface to deep)
-        for (let y = 0; y < this.worldHeight; y += 8) {
-            const ratio = y / this.worldHeight;
-            // Surface: lighter cyan-blue, Deep: darker blue-green
-            const r = Math.floor(15 + (1 - ratio) * 45);
-            const g = Math.floor(50 + (1 - ratio) * 110);
-            const b = Math.floor(90 + (1 - ratio) * 90);
-            bg.fillStyle(Phaser.Display.Color.GetColor(r, g, b), 1);
-            bg.fillRect(0, y, this.worldWidth, 8);
+        // Draw each biome's gradient
+        for (const biomeKey of BIOME_ORDER) {
+            const biome = BIOMES[biomeKey];
+            const topColor = Phaser.Display.Color.IntegerToColor(biome.colors.top);
+            const bottomColor = Phaser.Display.Color.IntegerToColor(biome.colors.bottom);
+
+            for (let y = biome.yStart; y < biome.yEnd; y += 4) {
+                const ratio = (y - biome.yStart) / (biome.yEnd - biome.yStart);
+                const r = Math.floor(topColor.red + (bottomColor.red - topColor.red) * ratio);
+                const g = Math.floor(topColor.green + (bottomColor.green - topColor.green) * ratio);
+                const b = Math.floor(topColor.blue + (bottomColor.blue - topColor.blue) * ratio);
+                bg.fillStyle(Phaser.Display.Color.GetColor(r, g, b), 1);
+                bg.fillRect(0, y, this.worldWidth, 4);
+            }
         }
 
-        // Add light rays from surface
+        // Add light rays from surface (only in surface biome)
         this.createLightRays(bg);
 
         // Add caustic light effects (animated)
@@ -116,6 +222,9 @@ export class GameScene extends Phaser.Scene {
         // Add school of tiny fish in background
         this.schoolFish = [];
         this.createSchoolFish();
+
+        // Add biome-specific decorations (bioluminescence, vents, etc.)
+        this.createBiomeDecorations();
     }
 
     createLightRays(bg) {
@@ -460,15 +569,187 @@ export class GameScene extends Phaser.Scene {
     }
 
     createFloatingParticles(bg) {
-        // Small floating particles (plankton/marine snow)
-        for (let i = 0; i < 100; i++) {
+        // Small floating particles (plankton/marine snow) - more in deeper biomes
+        for (let i = 0; i < 150; i++) {
             const x = Math.random() * this.worldWidth;
             const y = Math.random() * this.worldHeight;
+            const biome = getBiomeAtY(y);
             const size = 1 + Math.random() * 2;
-            const alpha = 0.1 + Math.random() * 0.2;
 
-            bg.fillStyle(0xffffff, alpha);
-            bg.fillCircle(x, y, size);
+            // More particles in deeper biomes (marine snow effect)
+            if (biome.id === 'abyss' || biome.id === 'bathyal') {
+                const alpha = 0.15 + Math.random() * 0.25;
+                bg.fillStyle(0xccccff, alpha); // Slight blue tint
+                bg.fillCircle(x, y, size);
+            } else {
+                const alpha = 0.1 + Math.random() * 0.15;
+                bg.fillStyle(0xffffff, alpha);
+                bg.fillCircle(x, y, size);
+            }
+        }
+    }
+
+    createBiomeDecorations() {
+        // Bioluminescent points in the abyss
+        this.biolumPoints = [];
+        const abyssBiome = BIOMES.ABYSS;
+
+        for (let i = 0; i < 30; i++) {
+            const point = {
+                x: Math.random() * this.worldWidth,
+                y: abyssBiome.yStart + Math.random() * (abyssBiome.yEnd - abyssBiome.yStart),
+                size: 2 + Math.random() * 4,
+                color: [0x00ffff, 0xff00ff, 0x00ff88, 0xffff00][Math.floor(Math.random() * 4)],
+                phase: Math.random() * Math.PI * 2,
+                pulseSpeed: 0.5 + Math.random() * 1.5,
+                graphics: this.add.graphics()
+            };
+            this.biolumPoints.push(point);
+        }
+
+        // Hydrothermal vents in the abyss
+        this.vents = [];
+        for (let i = 0; i < 5; i++) {
+            const vent = {
+                x: 200 + Math.random() * (this.worldWidth - 400),
+                y: this.worldHeight - 60,
+                width: 30 + Math.random() * 40,
+                graphics: this.add.graphics(),
+                particles: [],
+                lastEmit: 0
+            };
+            this.vents.push(vent);
+            this.drawVent(vent);
+        }
+
+        // Glowing eyes in bathyal zone (creepy effect)
+        this.glowingEyes = [];
+        const bathyalBiome = BIOMES.BATHYAL;
+
+        for (let i = 0; i < 12; i++) {
+            const eyes = {
+                x: Math.random() * this.worldWidth,
+                y: bathyalBiome.yStart + 50 + Math.random() * (bathyalBiome.yEnd - bathyalBiome.yStart - 100),
+                size: 3 + Math.random() * 3,
+                spacing: 8 + Math.random() * 6,
+                color: [0xff0000, 0xffff00, 0x00ff00][Math.floor(Math.random() * 3)],
+                blinkPhase: Math.random() * Math.PI * 2,
+                graphics: this.add.graphics(),
+                visible: true
+            };
+            this.glowingEyes.push(eyes);
+        }
+    }
+
+    drawVent(vent) {
+        vent.graphics.clear();
+
+        // Vent base (rock formation)
+        vent.graphics.fillStyle(0x333333, 1);
+        vent.graphics.fillEllipse(vent.x, vent.y + 10, vent.width, 20);
+
+        // Vent opening
+        vent.graphics.fillStyle(0x111111, 1);
+        vent.graphics.fillEllipse(vent.x, vent.y, vent.width * 0.6, 10);
+
+        // Orange glow from heat
+        vent.graphics.fillStyle(0xff4400, 0.3);
+        vent.graphics.fillEllipse(vent.x, vent.y, vent.width * 0.4, 8);
+    }
+
+    updateBiomeDecorations(time, delta) {
+        // Update bioluminescent points
+        if (this.biolumPoints) {
+            this.biolumPoints.forEach(point => {
+                if (!this.isInCameraView(point.x, point.y, 50)) {
+                    point.graphics.setVisible(false);
+                    return;
+                }
+                point.graphics.setVisible(true);
+                point.graphics.clear();
+
+                const pulse = Math.sin(time * 0.001 * point.pulseSpeed + point.phase);
+                const alpha = 0.3 + pulse * 0.4;
+                const size = point.size * (1 + pulse * 0.3);
+
+                // Glow
+                point.graphics.fillStyle(point.color, alpha * 0.3);
+                point.graphics.fillCircle(point.x, point.y, size * 3);
+
+                // Core
+                point.graphics.fillStyle(point.color, alpha);
+                point.graphics.fillCircle(point.x, point.y, size);
+
+                // Bright center
+                point.graphics.fillStyle(0xffffff, alpha * 0.8);
+                point.graphics.fillCircle(point.x, point.y, size * 0.4);
+            });
+        }
+
+        // Update hydrothermal vents (smoke particles)
+        if (this.vents) {
+            this.vents.forEach(vent => {
+                if (!this.isInCameraView(vent.x, vent.y, 100)) return;
+
+                // Emit smoke particles
+                if (time - vent.lastEmit > 200) {
+                    vent.lastEmit = time;
+                    const particle = this.add.graphics();
+                    particle.fillStyle(0x444444, 0.4);
+                    particle.fillCircle(0, 0, 5 + Math.random() * 8);
+                    particle.x = vent.x + (Math.random() - 0.5) * 15;
+                    particle.y = vent.y;
+
+                    this.tweens.add({
+                        targets: particle,
+                        y: vent.y - 80 - Math.random() * 40,
+                        x: particle.x + (Math.random() - 0.5) * 40,
+                        alpha: 0,
+                        scale: 2,
+                        duration: 2000 + Math.random() * 1000,
+                        onComplete: () => particle.destroy()
+                    });
+                }
+            });
+        }
+
+        // Update glowing eyes
+        if (this.glowingEyes) {
+            this.glowingEyes.forEach(eyes => {
+                if (!this.isInCameraView(eyes.x, eyes.y, 30)) {
+                    eyes.graphics.setVisible(false);
+                    return;
+                }
+                eyes.graphics.setVisible(true);
+                eyes.graphics.clear();
+
+                eyes.blinkPhase += delta * 0.002;
+
+                // Random blinking
+                const blink = Math.sin(eyes.blinkPhase);
+                if (blink < -0.9) {
+                    return; // Eyes closed
+                }
+
+                const alpha = 0.6 + blink * 0.3;
+
+                // Left eye
+                eyes.graphics.fillStyle(eyes.color, alpha * 0.3);
+                eyes.graphics.fillCircle(eyes.x - eyes.spacing / 2, eyes.y, eyes.size * 2);
+                eyes.graphics.fillStyle(eyes.color, alpha);
+                eyes.graphics.fillCircle(eyes.x - eyes.spacing / 2, eyes.y, eyes.size);
+
+                // Right eye
+                eyes.graphics.fillStyle(eyes.color, alpha * 0.3);
+                eyes.graphics.fillCircle(eyes.x + eyes.spacing / 2, eyes.y, eyes.size * 2);
+                eyes.graphics.fillStyle(eyes.color, alpha);
+                eyes.graphics.fillCircle(eyes.x + eyes.spacing / 2, eyes.y, eyes.size);
+
+                // Pupil highlights
+                eyes.graphics.fillStyle(0xffffff, alpha * 0.5);
+                eyes.graphics.fillCircle(eyes.x - eyes.spacing / 2 - 1, eyes.y - 1, eyes.size * 0.3);
+                eyes.graphics.fillCircle(eyes.x + eyes.spacing / 2 - 1, eyes.y - 1, eyes.size * 0.3);
+            });
         }
     }
 
@@ -890,6 +1171,9 @@ export class GameScene extends Phaser.Scene {
                 fish.sprite.y += waveY * 0.1; // Subtle wave effect
             });
         }
+
+        // Update biome-specific decorations
+        this.updateBiomeDecorations(time, delta);
     }
 
     createHUD() {
@@ -1261,7 +1545,51 @@ export class GameScene extends Phaser.Scene {
         // Limit max enemies
         if (this.enemies.length >= 30) return;
 
-        // Choose random type based on weights
+        // Choose a random biome first
+        const biomeKeys = Object.keys(BIOMES);
+        const randomBiomeKey = biomeKeys[Math.floor(Math.random() * biomeKeys.length)];
+        const selectedBiome = BIOMES[randomBiomeKey];
+
+        // Get enemies that can spawn in this biome
+        const biomeEnemies = getEnemiesForBiome(selectedBiome.id);
+
+        if (biomeEnemies.length === 0) {
+            // Fallback to any enemy if no biome-specific enemies
+            return this.spawnAnyEnemy();
+        }
+
+        // Choose enemy based on weights within the biome
+        const totalWeight = biomeEnemies.reduce((sum, e) => sum + e.spawnWeight, 0);
+        let random = Math.random() * totalWeight * selectedBiome.spawnMultiplier;
+        let selectedType = biomeEnemies[0].key;
+
+        for (const enemy of biomeEnemies) {
+            random -= enemy.spawnWeight;
+            if (random <= 0) {
+                selectedType = enemy.key;
+                break;
+            }
+        }
+
+        // Spawn at edge of world within biome's Y range
+        let x, y;
+        const side = Math.random() > 0.5 ? 'left' : 'right'; // Only spawn from sides for biome accuracy
+        const biomeYRange = getSpawnRangeForBiome(selectedBiome.id);
+
+        if (side === 'left') {
+            x = 50;
+        } else {
+            x = this.worldWidth - 50;
+        }
+        y = biomeYRange.min + Math.random() * (biomeYRange.max - biomeYRange.min);
+
+        const enemy = new Enemy(this, x, y, selectedType);
+        enemy.body.setCollideWorldBounds(true);
+        this.enemies.push(enemy);
+    }
+
+    spawnAnyEnemy() {
+        // Fallback spawn function for any enemy type
         const totalWeight = Object.values(ENEMY_TYPES).reduce((sum, t) => sum + t.spawnWeight, 0);
         let random = Math.random() * totalWeight;
         let selectedType = 'COMMON';
@@ -1274,28 +1602,9 @@ export class GameScene extends Phaser.Scene {
             }
         }
 
-        // Spawn at edge of world
-        let x, y;
-        const side = Math.floor(Math.random() * 4);
-
-        switch (side) {
-            case 0: // Top
-                x = Math.random() * this.worldWidth;
-                y = 50;
-                break;
-            case 1: // Right
-                x = this.worldWidth - 50;
-                y = Math.random() * this.worldHeight;
-                break;
-            case 2: // Bottom
-                x = Math.random() * this.worldWidth;
-                y = this.worldHeight - 50;
-                break;
-            case 3: // Left
-                x = 50;
-                y = Math.random() * this.worldHeight;
-                break;
-        }
+        const side = Math.random() > 0.5 ? 'left' : 'right';
+        const x = side === 'left' ? 50 : this.worldWidth - 50;
+        const y = 100 + Math.random() * (this.worldHeight - 200);
 
         const enemy = new Enemy(this, x, y, selectedType);
         enemy.body.setCollideWorldBounds(true);
@@ -1606,6 +1915,10 @@ export class GameScene extends Phaser.Scene {
 
         // Update HUD
         this.updateHUD();
+
+        // Check player biome and show indicator
+        const playerBiome = getBiomeAtY(this.player.y);
+        this.showBiomeIndicator(playerBiome);
 
         // Check for death
         if (this.player.isDead()) {

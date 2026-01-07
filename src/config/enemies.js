@@ -10,7 +10,8 @@ export const ENEMY_TYPES = {
         dnaAmount: 5,
         behavior: 'flee',
         hungerRestore: 15,
-        spawnWeight: 35
+        spawnWeight: 35,
+        biomes: ['surface', 'reef']
     },
     PUFFER: {
         name: 'Pez Globo',
@@ -23,7 +24,8 @@ export const ENEMY_TYPES = {
         dnaAmount: 8,
         behavior: 'wander',
         hungerRestore: 25,
-        spawnWeight: 20
+        spawnWeight: 20,
+        biomes: ['reef', 'thermocline']
     },
     HUNTER: {
         name: 'Pez Cazador',
@@ -36,7 +38,8 @@ export const ENEMY_TYPES = {
         dnaAmount: 10,
         behavior: 'chase',
         hungerRestore: 20,
-        spawnWeight: 15
+        spawnWeight: 15,
+        biomes: ['thermocline', 'bathyal']
     },
     LUMINOUS: {
         name: 'Pez Luminoso',
@@ -49,7 +52,8 @@ export const ENEMY_TYPES = {
         dnaAmount: 15,
         behavior: 'flee',
         hungerRestore: 10,
-        spawnWeight: 8
+        spawnWeight: 8,
+        biomes: ['surface']
     },
     MUTANT: {
         name: 'Pez Mutante',
@@ -62,9 +66,9 @@ export const ENEMY_TYPES = {
         dnaAmount: 20,
         behavior: 'chase',
         hungerRestore: 35,
-        spawnWeight: 4
+        spawnWeight: 4,
+        biomes: ['bathyal', 'abyss']
     },
-    // New enemy types
     TOXIC: {
         name: 'Pez Tóxico',
         color: 0x00ff00,
@@ -77,7 +81,8 @@ export const ENEMY_TYPES = {
         behavior: 'wander',
         hungerRestore: 18,
         spawnWeight: 10,
-        special: 'poison'
+        special: 'poison',
+        biomes: ['reef']
     },
     ANGLERFISH: {
         name: 'Pez Abisal',
@@ -91,7 +96,8 @@ export const ENEMY_TYPES = {
         behavior: 'ambush',
         hungerRestore: 40,
         spawnWeight: 3,
-        special: 'lure'
+        special: 'lure',
+        biomes: ['bathyal', 'abyss']
     },
     JELLYFISH: {
         name: 'Medusa',
@@ -105,7 +111,8 @@ export const ENEMY_TYPES = {
         behavior: 'float',
         hungerRestore: 12,
         spawnWeight: 12,
-        special: 'sting'
+        special: 'sting',
+        biomes: ['surface', 'reef']
     },
     SHARK: {
         name: 'Tiburón',
@@ -119,7 +126,8 @@ export const ENEMY_TYPES = {
         behavior: 'hunt',
         hungerRestore: 50,
         spawnWeight: 2,
-        special: 'frenzy'
+        special: 'frenzy',
+        biomes: ['thermocline', 'abyss']
     },
     ELECTRIC_EEL: {
         name: 'Anguila Eléctrica',
@@ -133,7 +141,8 @@ export const ENEMY_TYPES = {
         behavior: 'patrol',
         hungerRestore: 22,
         spawnWeight: 6,
-        special: 'shock'
+        special: 'shock',
+        biomes: ['thermocline', 'bathyal']
     },
     CAMOUFLAGE: {
         name: 'Pez Camuflado',
@@ -147,8 +156,16 @@ export const ENEMY_TYPES = {
         behavior: 'ambush',
         hungerRestore: 20,
         spawnWeight: 5,
-        special: 'invisible'
+        special: 'invisible',
+        biomes: ['reef', 'bathyal']
     }
 };
 
 export const DNA_TYPES = ['speed', 'defense', 'attack', 'energy'];
+
+// Get enemies that can spawn in a specific biome
+export function getEnemiesForBiome(biomeId) {
+    return Object.entries(ENEMY_TYPES)
+        .filter(([key, config]) => config.biomes && config.biomes.includes(biomeId))
+        .map(([key, config]) => ({ key, ...config }));
+}
