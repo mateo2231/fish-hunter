@@ -1,0 +1,420 @@
+/* Ocean Frame Styles - Fish Hunter */
+
+/* Reset and base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(180deg, #0a1628 0%, #1a3a5c 50%, #0d2840 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: sans-serif;
+}
+
+/* Main frame container */
+#ocean-frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Top wave section */
+.frame-top {
+    width: 100%;
+    height: 60px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+}
+
+.wave-svg {
+    width: 200%;
+    height: 100%;
+    animation: wave-shift 8s linear infinite;
+}
+
+.wave {
+    fill: rgba(0, 150, 200, 0.3);
+}
+
+.wave1 {
+    fill: rgba(0, 180, 220, 0.25);
+}
+
+.wave2 {
+    fill: rgba(0, 120, 180, 0.2);
+    animation: wave-float 3s ease-in-out infinite;
+}
+
+@keyframes wave-shift {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+@keyframes wave-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Middle section with sides */
+.frame-middle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+/* Side panels */
+.frame-side {
+    width: 80px;
+    height: 600px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Game container */
+#game-container {
+    border: 3px solid rgba(0, 150, 220, 0.6);
+    border-radius: 8px;
+    box-shadow:
+        0 0 20px rgba(0, 150, 220, 0.3),
+        0 0 40px rgba(0, 100, 180, 0.2),
+        inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Bubbles */
+.bubbles-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.bubble {
+    position: absolute;
+    background: radial-gradient(circle at 30% 30%,
+        rgba(255, 255, 255, 0.8) 0%,
+        rgba(255, 255, 255, 0.4) 30%,
+        rgba(200, 230, 255, 0.2) 60%,
+        transparent 100%);
+    border-radius: 50%;
+    animation: bubble-rise linear infinite;
+}
+
+.b1 { width: 12px; height: 12px; left: 20%; animation-duration: 8s; animation-delay: 0s; }
+.b2 { width: 8px; height: 8px; left: 50%; animation-duration: 10s; animation-delay: 2s; }
+.b3 { width: 15px; height: 15px; left: 70%; animation-duration: 7s; animation-delay: 1s; }
+.b4 { width: 6px; height: 6px; left: 35%; animation-duration: 12s; animation-delay: 4s; }
+.b5 { width: 10px; height: 10px; left: 80%; animation-duration: 9s; animation-delay: 3s; }
+.b6 { width: 10px; height: 10px; left: 25%; animation-duration: 9s; animation-delay: 0.5s; }
+.b7 { width: 14px; height: 14px; left: 55%; animation-duration: 8s; animation-delay: 2.5s; }
+.b8 { width: 7px; height: 7px; left: 40%; animation-duration: 11s; animation-delay: 1.5s; }
+.b9 { width: 11px; height: 11px; left: 75%; animation-duration: 7.5s; animation-delay: 3.5s; }
+.b10 { width: 9px; height: 9px; left: 15%; animation-duration: 10s; animation-delay: 5s; }
+
+@keyframes bubble-rise {
+    0% {
+        bottom: -20px;
+        opacity: 0;
+        transform: translateX(0) scale(0.5);
+    }
+    10% {
+        opacity: 0.7;
+    }
+    90% {
+        opacity: 0.4;
+    }
+    100% {
+        bottom: 100%;
+        opacity: 0;
+        transform: translateX(20px) scale(1);
+    }
+}
+
+/* Coral decorations */
+.coral {
+    position: absolute;
+    bottom: 20px;
+    width: 60px;
+    height: 80px;
+    background: linear-gradient(180deg, #ff6b6b 0%, #cc4444 100%);
+    clip-path: polygon(
+        50% 0%,
+        65% 15%, 80% 10%, 85% 25%, 95% 35%,
+        90% 50%, 100% 65%, 85% 75%, 90% 90%,
+        70% 85%, 50% 100%, 30% 85%, 10% 90%,
+        15% 75%, 0% 65%, 10% 50%, 5% 35%,
+        15% 25%, 20% 10%, 35% 15%
+    );
+    opacity: 0.8;
+    animation: coral-sway 4s ease-in-out infinite;
+}
+
+.coral-left {
+    left: 10px;
+    background: linear-gradient(180deg, #ff8e53 0%, #cc6633 100%);
+}
+
+.coral-right {
+    right: 10px;
+    background: linear-gradient(180deg, #ff6b9d 0%, #cc4477 100%);
+    animation-delay: 1s;
+}
+
+@keyframes coral-sway {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+}
+
+/* Small fish */
+.small-fish {
+    position: absolute;
+    width: 20px;
+    height: 12px;
+    background: linear-gradient(90deg, #66ccff 0%, #3399cc 100%);
+    border-radius: 60% 40% 40% 60% / 50% 50% 50% 50%;
+    animation: fish-swim 6s ease-in-out infinite;
+}
+
+.small-fish::before {
+    content: '';
+    position: absolute;
+    right: -8px;
+    top: 2px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid #3399cc;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+}
+
+.small-fish::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 3px;
+    width: 4px;
+    height: 4px;
+    background: #000;
+    border-radius: 50%;
+}
+
+.fish1 {
+    top: 30%;
+    left: 10px;
+    animation-duration: 5s;
+}
+
+.fish2 {
+    top: 60%;
+    right: 10px;
+    transform: scaleX(-1);
+    animation-duration: 7s;
+    animation-delay: 2s;
+    background: linear-gradient(90deg, #ffcc66 0%, #cc9933 100%);
+}
+
+.fish2::before {
+    border-left-color: #cc9933;
+}
+
+@keyframes fish-swim {
+    0%, 100% {
+        transform: translateY(0) translateX(0);
+    }
+    25% {
+        transform: translateY(-15px) translateX(10px);
+    }
+    50% {
+        transform: translateY(5px) translateX(-5px);
+    }
+    75% {
+        transform: translateY(-10px) translateX(15px);
+    }
+}
+
+/* Jellyfish */
+.jellyfish {
+    position: absolute;
+    width: 30px;
+    height: 25px;
+    background: radial-gradient(ellipse at center,
+        rgba(255, 150, 200, 0.6) 0%,
+        rgba(200, 100, 150, 0.4) 50%,
+        transparent 70%);
+    border-radius: 50% 50% 40% 40%;
+    animation: jelly-float 8s ease-in-out infinite;
+}
+
+.jellyfish::before {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 5px;
+    width: 20px;
+    height: 20px;
+    background:
+        linear-gradient(180deg, rgba(255, 150, 200, 0.5) 0%, transparent 100%);
+    clip-path: polygon(
+        0% 0%, 10% 50%, 20% 0%, 30% 60%, 40% 0%,
+        50% 70%, 60% 0%, 70% 60%, 80% 0%, 90% 50%, 100% 0%
+    );
+    animation: tentacles-wave 2s ease-in-out infinite;
+}
+
+.jelly1 {
+    top: 50%;
+    left: 25px;
+}
+
+.jelly2 {
+    top: 25%;
+    right: 20px;
+    animation-delay: 3s;
+    background: radial-gradient(ellipse at center,
+        rgba(150, 200, 255, 0.6) 0%,
+        rgba(100, 150, 200, 0.4) 50%,
+        transparent 70%);
+}
+
+.jelly2::before {
+    background: linear-gradient(180deg, rgba(150, 200, 255, 0.5) 0%, transparent 100%);
+}
+
+@keyframes jelly-float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    25% {
+        transform: translateY(-20px) scale(1.05);
+    }
+    50% {
+        transform: translateY(-10px) scale(0.95);
+    }
+    75% {
+        transform: translateY(-30px) scale(1.02);
+    }
+}
+
+@keyframes tentacles-wave {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.2); }
+}
+
+/* Bottom section */
+.frame-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 30px;
+    pointer-events: none;
+}
+
+/* Seaweed */
+.seaweed {
+    width: 15px;
+    height: 60px;
+    background: linear-gradient(180deg, #22aa44 0%, #116633 100%);
+    border-radius: 50% 50% 0 0;
+    transform-origin: bottom center;
+    animation: seaweed-sway 3s ease-in-out infinite;
+}
+
+.sw1 { height: 50px; animation-delay: 0s; }
+.sw2 { height: 70px; animation-delay: 0.5s; background: linear-gradient(180deg, #33bb55 0%, #228844 100%); }
+.sw3 { height: 55px; animation-delay: 1s; }
+.sw4 { height: 65px; animation-delay: 0.3s; background: linear-gradient(180deg, #44cc66 0%, #339955 100%); }
+.sw5 { height: 45px; animation-delay: 0.8s; }
+
+@keyframes seaweed-sway {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+/* Bottom coral */
+.coral-bottom {
+    width: 40px;
+    height: 35px;
+    background: linear-gradient(180deg, #ff9966 0%, #cc6633 100%);
+    border-radius: 40% 40% 0 0;
+    clip-path: polygon(
+        0% 100%, 10% 60%, 20% 80%, 35% 40%, 50% 70%,
+        65% 30%, 80% 60%, 90% 40%, 100% 100%
+    );
+}
+
+.cb1 {
+    background: linear-gradient(180deg, #ff6b6b 0%, #cc4444 100%);
+}
+
+.cb2 {
+    background: linear-gradient(180deg, #feca57 0%, #cc9933 100%);
+}
+
+/* Ambient light effect */
+#ocean-frame::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at 50% 0%,
+        rgba(100, 200, 255, 0.1) 0%,
+        transparent 50%);
+    pointer-events: none;
+    animation: light-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes light-shimmer {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .frame-side {
+        width: 50px;
+    }
+
+    .coral {
+        width: 40px;
+        height: 50px;
+    }
+
+    .small-fish {
+        width: 15px;
+        height: 9px;
+    }
+
+    .jellyfish {
+        width: 20px;
+        height: 18px;
+    }
+}
+
+@media (max-width: 700px) {
+    .frame-side {
+        display: none;
+    }
+
+    .frame-bottom {
+        height: 50px;
+    }
+
+    .seaweed {
+        height: 40px;
+    }
+}

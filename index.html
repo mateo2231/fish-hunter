@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fish Hunter</title>
+    <link rel="stylesheet" href="styles/ocean-frame.css">
+</head>
+<body>
+    <div id="ocean-frame">
+        <!-- Top wave decoration -->
+        <div class="frame-top">
+            <svg class="wave-svg" viewBox="0 0 1200 60" preserveAspectRatio="none">
+                <path class="wave wave1" d="M0,30 C150,60 350,0 600,30 C850,60 1050,0 1200,30 L1200,60 L0,60 Z"/>
+                <path class="wave wave2" d="M0,35 C150,10 350,50 600,35 C850,10 1050,50 1200,35 L1200,60 L0,60 Z"/>
+            </svg>
+        </div>
+
+        <!-- Main content area -->
+        <div class="frame-middle">
+            <!-- Left decoration -->
+            <div class="frame-side frame-left">
+                <div class="bubbles-container">
+                    <div class="bubble b1"></div>
+                    <div class="bubble b2"></div>
+                    <div class="bubble b3"></div>
+                    <div class="bubble b4"></div>
+                    <div class="bubble b5"></div>
+                </div>
+                <div class="coral coral-left"></div>
+                <div class="small-fish fish1"></div>
+                <div class="jellyfish jelly1"></div>
+            </div>
+
+            <!-- Game container -->
+            <div id="game-container"></div>
+
+            <!-- Right decoration -->
+            <div class="frame-side frame-right">
+                <div class="bubbles-container">
+                    <div class="bubble b6"></div>
+                    <div class="bubble b7"></div>
+                    <div class="bubble b8"></div>
+                    <div class="bubble b9"></div>
+                    <div class="bubble b10"></div>
+                </div>
+                <div class="coral coral-right"></div>
+                <div class="small-fish fish2"></div>
+                <div class="jellyfish jelly2"></div>
+            </div>
+        </div>
+
+        <!-- Bottom seaweed decoration -->
+        <div class="frame-bottom">
+            <div class="seaweed sw1"></div>
+            <div class="seaweed sw2"></div>
+            <div class="seaweed sw3"></div>
+            <div class="seaweed sw4"></div>
+            <div class="seaweed sw5"></div>
+            <div class="coral-bottom cb1"></div>
+            <div class="coral-bottom cb2"></div>
+        </div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
