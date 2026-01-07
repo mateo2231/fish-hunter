@@ -10,7 +10,7 @@ export const ENEMY_TYPES = {
         dnaAmount: 5,
         behavior: 'flee',
         hungerRestore: 15,
-        spawnWeight: 40
+        spawnWeight: 35
     },
     PUFFER: {
         name: 'Pez Globo',
@@ -23,7 +23,7 @@ export const ENEMY_TYPES = {
         dnaAmount: 8,
         behavior: 'wander',
         hungerRestore: 25,
-        spawnWeight: 25
+        spawnWeight: 20
     },
     HUNTER: {
         name: 'Pez Cazador',
@@ -36,7 +36,7 @@ export const ENEMY_TYPES = {
         dnaAmount: 10,
         behavior: 'chase',
         hungerRestore: 20,
-        spawnWeight: 20
+        spawnWeight: 15
     },
     LUMINOUS: {
         name: 'Pez Luminoso',
@@ -49,7 +49,7 @@ export const ENEMY_TYPES = {
         dnaAmount: 15,
         behavior: 'flee',
         hungerRestore: 10,
-        spawnWeight: 10
+        spawnWeight: 8
     },
     MUTANT: {
         name: 'Pez Mutante',
@@ -62,7 +62,92 @@ export const ENEMY_TYPES = {
         dnaAmount: 20,
         behavior: 'chase',
         hungerRestore: 35,
-        spawnWeight: 5
+        spawnWeight: 4
+    },
+    // New enemy types
+    TOXIC: {
+        name: 'Pez Tóxico',
+        color: 0x00ff00,
+        size: 18,
+        speed: 50,
+        health: 2,
+        damage: 5,
+        dnaType: 'defense',
+        dnaAmount: 12,
+        behavior: 'wander',
+        hungerRestore: 18,
+        spawnWeight: 10,
+        special: 'poison'
+    },
+    ANGLERFISH: {
+        name: 'Pez Abisal',
+        color: 0x2a1a4a,
+        size: 35,
+        speed: 30,
+        health: 4,
+        damage: 20,
+        dnaType: 'energy',
+        dnaAmount: 25,
+        behavior: 'ambush',
+        hungerRestore: 40,
+        spawnWeight: 3,
+        special: 'lure'
+    },
+    JELLYFISH: {
+        name: 'Medusa',
+        color: 0xff88cc,
+        size: 22,
+        speed: 20,
+        health: 1,
+        damage: 8,
+        dnaType: 'energy',
+        dnaAmount: 10,
+        behavior: 'float',
+        hungerRestore: 12,
+        spawnWeight: 12,
+        special: 'sting'
+    },
+    SHARK: {
+        name: 'Tiburón',
+        color: 0x555577,
+        size: 45,
+        speed: 90,
+        health: 8,
+        damage: 25,
+        dnaType: 'attack',
+        dnaAmount: 30,
+        behavior: 'hunt',
+        hungerRestore: 50,
+        spawnWeight: 2,
+        special: 'frenzy'
+    },
+    ELECTRIC_EEL: {
+        name: 'Anguila Eléctrica',
+        color: 0x00ccff,
+        size: 28,
+        speed: 65,
+        health: 3,
+        damage: 12,
+        dnaType: 'energy',
+        dnaAmount: 18,
+        behavior: 'patrol',
+        hungerRestore: 22,
+        spawnWeight: 6,
+        special: 'shock'
+    },
+    CAMOUFLAGE: {
+        name: 'Pez Camuflado',
+        color: 0x8b7355,
+        size: 20,
+        speed: 100,
+        health: 2,
+        damage: 15,
+        dnaType: 'speed',
+        dnaAmount: 12,
+        behavior: 'ambush',
+        hungerRestore: 20,
+        spawnWeight: 5,
+        special: 'invisible'
     }
 };
 

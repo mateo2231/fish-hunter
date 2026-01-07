@@ -71,6 +71,24 @@ export class Enemy extends Phaser.GameObjects.Container {
             case 'MUTANT':
                 this.drawMutantFish();
                 break;
+            case 'TOXIC':
+                this.drawToxicFish();
+                break;
+            case 'ANGLERFISH':
+                this.drawAnglerfish();
+                break;
+            case 'JELLYFISH':
+                this.drawJellyfish();
+                break;
+            case 'SHARK':
+                this.drawShark();
+                break;
+            case 'ELECTRIC_EEL':
+                this.drawElectricEel();
+                break;
+            case 'CAMOUFLAGE':
+                this.drawCamouflageFish();
+                break;
             default:
                 this.drawCommonFish();
         }
@@ -328,6 +346,244 @@ export class Enemy extends Phaser.GameObjects.Container {
         this.detailGraphics.fillTriangle(s * 0.5, -s * 0.1, s * 0.9, 0, s * 0.5, s * 0.1);
     }
 
+    drawToxicFish() {
+        const s = this.size;
+        const color = this.config.color;
+        const darkColor = 0x008800;
+
+        // Spiky tail
+        this.tailGraphics.fillStyle(darkColor, 0.9);
+        this.tailGraphics.fillTriangle(-s, 0, -s * 1.5, -s * 0.5, -s * 1.2, 0);
+        this.tailGraphics.fillTriangle(-s, 0, -s * 1.5, s * 0.5, -s * 1.2, 0);
+
+        // Body with bumps
+        this.mainGraphics.fillStyle(color, 1);
+        this.mainGraphics.fillEllipse(0, 0, s * 2, s * 1.4);
+
+        // Poison spots
+        this.detailGraphics.fillStyle(0xaaff00, 0.8);
+        this.detailGraphics.fillCircle(-s * 0.3, -s * 0.2, s * 0.2);
+        this.detailGraphics.fillCircle(s * 0.2, s * 0.3, s * 0.15);
+        this.detailGraphics.fillCircle(-s * 0.1, s * 0.1, s * 0.18);
+
+        // Warning pattern stripes
+        this.detailGraphics.fillStyle(0x004400, 0.5);
+        for (let i = -2; i <= 2; i++) {
+            this.detailGraphics.fillRect(i * s * 0.35 - s * 0.05, -s * 0.5, s * 0.1, s);
+        }
+
+        // Angry eyes
+        this.detailGraphics.fillStyle(0xffff00, 1);
+        this.detailGraphics.fillCircle(s * 0.5, -s * 0.15, s * 0.25);
+        this.detailGraphics.fillStyle(0x000000, 1);
+        this.detailGraphics.fillCircle(s * 0.55, -s * 0.15, s * 0.12);
+    }
+
+    drawAnglerfish() {
+        const s = this.size;
+        const color = this.config.color;
+        const darkColor = 0x1a0a2a;
+
+        // Thin tail
+        this.tailGraphics.fillStyle(darkColor, 0.8);
+        this.tailGraphics.fillTriangle(-s * 0.8, 0, -s * 1.4, -s * 0.3, -s * 1.4, s * 0.3);
+
+        // Large rounded body
+        this.mainGraphics.fillStyle(color, 1);
+        this.mainGraphics.fillCircle(0, 0, s);
+
+        // Big scary mouth
+        this.mainGraphics.fillStyle(0x110011, 1);
+        this.mainGraphics.beginPath();
+        this.mainGraphics.arc(s * 0.3, 0, s * 0.6, -0.8, 0.8);
+        this.mainGraphics.fill();
+
+        // Teeth
+        this.detailGraphics.fillStyle(0xffffff, 1);
+        for (let i = 0; i < 5; i++) {
+            const angle = -0.6 + i * 0.3;
+            const tx = s * 0.3 + Math.cos(angle) * s * 0.55;
+            const ty = Math.sin(angle) * s * 0.55;
+            this.detailGraphics.fillTriangle(tx, ty, tx + s * 0.15, ty, tx + s * 0.07, ty + (ty > 0 ? s * 0.2 : -s * 0.2));
+        }
+
+        // Lure (bioluminescent)
+        this.detailGraphics.fillStyle(0x00ffff, 0.8);
+        this.detailGraphics.fillCircle(s * 0.2, -s * 1.2, s * 0.15);
+        this.detailGraphics.lineStyle(2, darkColor, 1);
+        this.detailGraphics.lineBetween(s * 0.1, -s * 0.8, s * 0.2, -s * 1.1);
+
+        // Small evil eye
+        this.detailGraphics.fillStyle(0xff0000, 1);
+        this.detailGraphics.fillCircle(-s * 0.3, -s * 0.4, s * 0.12);
+        this.detailGraphics.fillStyle(0x000000, 1);
+        this.detailGraphics.fillCircle(-s * 0.28, -s * 0.4, s * 0.05);
+    }
+
+    drawJellyfish() {
+        const s = this.size;
+        const color = this.config.color;
+
+        // Bell/dome
+        this.mainGraphics.fillStyle(color, 0.6);
+        this.mainGraphics.fillEllipse(0, -s * 0.2, s * 1.8, s * 1.2);
+
+        // Inner glow
+        this.mainGraphics.fillStyle(0xffffff, 0.3);
+        this.mainGraphics.fillEllipse(0, -s * 0.3, s * 1.2, s * 0.8);
+
+        // Tentacles
+        this.detailGraphics.lineStyle(2, color, 0.7);
+        for (let i = 0; i < 8; i++) {
+            const tx = (i - 3.5) * s * 0.4;
+            const waveOffset = Math.sin(i * 0.5) * s * 0.2;
+            this.detailGraphics.beginPath();
+            this.detailGraphics.moveTo(tx, s * 0.3);
+            this.detailGraphics.lineTo(tx + waveOffset, s * 0.8);
+            this.detailGraphics.lineTo(tx - waveOffset * 0.5, s * 1.3);
+            this.detailGraphics.stroke();
+        }
+
+        // No tail needed
+        this.tailGraphics.clear();
+    }
+
+    drawShark() {
+        const s = this.size;
+        const color = this.config.color;
+        const darkColor = 0x333355;
+        const bellyColor = 0xaaaaaa;
+
+        // Powerful tail
+        this.tailGraphics.fillStyle(color, 1);
+        this.tailGraphics.fillTriangle(-s * 0.6, 0, -s * 1.3, -s * 0.7, -s * 0.9, 0);
+        this.tailGraphics.fillTriangle(-s * 0.6, 0, -s * 1.3, s * 0.5, -s * 0.9, 0);
+
+        // Streamlined body
+        this.mainGraphics.fillStyle(color, 1);
+        this.mainGraphics.beginPath();
+        this.mainGraphics.moveTo(s, 0);
+        this.mainGraphics.lineTo(s * 0.3, -s * 0.5);
+        this.mainGraphics.lineTo(-s * 0.6, -s * 0.4);
+        this.mainGraphics.lineTo(-s * 0.6, s * 0.4);
+        this.mainGraphics.lineTo(s * 0.3, s * 0.5);
+        this.mainGraphics.closePath();
+        this.mainGraphics.fill();
+
+        // White belly
+        this.mainGraphics.fillStyle(bellyColor, 1);
+        this.mainGraphics.beginPath();
+        this.mainGraphics.moveTo(s * 0.8, s * 0.1);
+        this.mainGraphics.lineTo(s * 0.2, s * 0.4);
+        this.mainGraphics.lineTo(-s * 0.5, s * 0.35);
+        this.mainGraphics.lineTo(-s * 0.5, s * 0.1);
+        this.mainGraphics.closePath();
+        this.mainGraphics.fill();
+
+        // Dorsal fin
+        this.mainGraphics.fillStyle(darkColor, 1);
+        this.mainGraphics.fillTriangle(0, -s * 0.5, -s * 0.3, -s * 0.5, -s * 0.1, -s);
+
+        // Pectoral fins
+        this.mainGraphics.fillStyle(color, 0.9);
+        this.mainGraphics.fillTriangle(s * 0.1, s * 0.3, -s * 0.3, s * 0.8, -s * 0.2, s * 0.3);
+
+        // Gill slits
+        this.detailGraphics.lineStyle(1.5, darkColor, 0.6);
+        for (let i = 0; i < 3; i++) {
+            const gx = s * 0.3 - i * s * 0.15;
+            this.detailGraphics.lineBetween(gx, -s * 0.2, gx, s * 0.15);
+        }
+
+        // Cold eye
+        this.detailGraphics.fillStyle(0x111111, 1);
+        this.detailGraphics.fillCircle(s * 0.6, -s * 0.15, s * 0.12);
+        this.detailGraphics.fillStyle(0x000000, 1);
+        this.detailGraphics.fillCircle(s * 0.62, -s * 0.15, s * 0.06);
+    }
+
+    drawElectricEel() {
+        const s = this.size;
+        const color = this.config.color;
+        const darkColor = 0x006699;
+
+        // Long serpentine tail
+        this.tailGraphics.fillStyle(darkColor, 0.9);
+        this.tailGraphics.fillEllipse(-s * 0.8, 0, s * 0.8, s * 0.25);
+
+        // Long body
+        this.mainGraphics.fillStyle(color, 1);
+        this.mainGraphics.fillEllipse(0, 0, s * 2.5, s * 0.5);
+
+        // Electric pattern
+        this.detailGraphics.lineStyle(2, 0xffff00, 0.8);
+        this.detailGraphics.beginPath();
+        this.detailGraphics.moveTo(-s, 0);
+        for (let i = 0; i < 6; i++) {
+            const x = -s + i * s * 0.4;
+            const y = (i % 2 === 0 ? -1 : 1) * s * 0.15;
+            this.detailGraphics.lineTo(x, y);
+        }
+        this.detailGraphics.stroke();
+
+        // Spots along body
+        this.detailGraphics.fillStyle(0xffff00, 0.6);
+        for (let i = 0; i < 4; i++) {
+            this.detailGraphics.fillCircle(-s * 0.6 + i * s * 0.4, 0, s * 0.08);
+        }
+
+        // Small eye
+        this.detailGraphics.fillStyle(0xffff00, 1);
+        this.detailGraphics.fillCircle(s * 0.9, -s * 0.05, s * 0.1);
+        this.detailGraphics.fillStyle(0x000000, 1);
+        this.detailGraphics.fillCircle(s * 0.92, -s * 0.05, s * 0.05);
+    }
+
+    drawCamouflageFish() {
+        const s = this.size;
+        const color = this.config.color;
+        const darkColor = 0x5a4a3a;
+
+        // Ragged tail
+        this.tailGraphics.fillStyle(darkColor, 0.7);
+        this.tailGraphics.beginPath();
+        this.tailGraphics.moveTo(-s * 0.8, 0);
+        this.tailGraphics.lineTo(-s * 1.3, -s * 0.4);
+        this.tailGraphics.lineTo(-s * 1.1, -s * 0.1);
+        this.tailGraphics.lineTo(-s * 1.4, 0);
+        this.tailGraphics.lineTo(-s * 1.1, s * 0.1);
+        this.tailGraphics.lineTo(-s * 1.3, s * 0.4);
+        this.tailGraphics.closePath();
+        this.tailGraphics.fill();
+
+        // Irregular body shape
+        this.mainGraphics.fillStyle(color, 0.9);
+        this.mainGraphics.beginPath();
+        this.mainGraphics.moveTo(s * 0.9, 0);
+        this.mainGraphics.lineTo(s * 0.5, -s * 0.5);
+        this.mainGraphics.lineTo(-s * 0.2, -s * 0.6);
+        this.mainGraphics.lineTo(-s * 0.7, -s * 0.3);
+        this.mainGraphics.lineTo(-s * 0.8, s * 0.2);
+        this.mainGraphics.lineTo(-s * 0.3, s * 0.5);
+        this.mainGraphics.lineTo(s * 0.4, s * 0.4);
+        this.mainGraphics.closePath();
+        this.mainGraphics.fill();
+
+        // Rock/sand texture spots
+        this.detailGraphics.fillStyle(darkColor, 0.5);
+        this.detailGraphics.fillCircle(-s * 0.3, -s * 0.2, s * 0.2);
+        this.detailGraphics.fillCircle(s * 0.2, s * 0.1, s * 0.25);
+        this.detailGraphics.fillStyle(0x9a8a7a, 0.4);
+        this.detailGraphics.fillCircle(s * 0.1, -s * 0.3, s * 0.15);
+        this.detailGraphics.fillCircle(-s * 0.4, s * 0.2, s * 0.18);
+
+        // Hidden eye
+        this.detailGraphics.fillStyle(0xaa9955, 1);
+        this.detailGraphics.fillCircle(s * 0.5, -s * 0.1, s * 0.15);
+        this.detailGraphics.fillStyle(0x000000, 1);
+        this.detailGraphics.fillCircle(s * 0.53, -s * 0.1, s * 0.07);
+    }
+
     animateFish(time, delta) {
         this.animTime += 0.016;
         this.glowPulse += 0.03;
@@ -454,6 +710,18 @@ export class Enemy extends Phaser.GameObjects.Container {
             case 'chase':
                 this.chasePlayer(player, distToPlayer);
                 break;
+            case 'ambush':
+                this.ambushBehavior(player, distToPlayer);
+                break;
+            case 'float':
+                this.floatBehavior(time);
+                break;
+            case 'hunt':
+                this.huntBehavior(player, distToPlayer);
+                break;
+            case 'patrol':
+                this.patrolBehavior(time);
+                break;
             case 'wander':
             default:
                 this.wander(time);
@@ -509,6 +777,103 @@ export class Enemy extends Phaser.GameObjects.Container {
 
         this.body.velocity.x = Math.cos(this.wanderAngle) * this.speed * 0.5;
         this.body.velocity.y = Math.sin(this.wanderAngle) * this.speed * 0.5;
+    }
+
+    ambushBehavior(player, distance) {
+        // Stay hidden and still until player is close, then attack
+        const triggerDistance = 120;
+        const chaseDistance = 250;
+
+        if (!this.isAmbushing) {
+            this.isAmbushing = true;
+            this.ambushRevealed = false;
+        }
+
+        if (distance < triggerDistance && !this.ambushRevealed) {
+            this.ambushRevealed = true;
+            // Burst of speed when revealed
+            const angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
+            this.body.velocity.x = Math.cos(angle) * this.speed * 2;
+            this.body.velocity.y = Math.sin(angle) * this.speed * 2;
+        } else if (this.ambushRevealed && distance < chaseDistance) {
+            // Chase after revealed
+            const angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
+            this.body.velocity.x = Math.cos(angle) * this.speed;
+            this.body.velocity.y = Math.sin(angle) * this.speed;
+        } else if (!this.ambushRevealed) {
+            // Stay still while hiding
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.y *= 0.9;
+        } else {
+            // Reset ambush if player gets far away
+            if (distance > 400) {
+                this.ambushRevealed = false;
+            }
+            this.wander();
+        }
+    }
+
+    floatBehavior(time) {
+        // Slow drifting up and down, very passive movement
+        if (!this.floatPhase) this.floatPhase = Math.random() * Math.PI * 2;
+        this.floatPhase += 0.01;
+
+        const floatY = Math.sin(this.floatPhase) * 0.5;
+        const driftX = Math.sin(this.floatPhase * 0.3) * 0.3;
+
+        this.body.velocity.x = driftX * this.speed;
+        this.body.velocity.y = floatY * this.speed;
+    }
+
+    huntBehavior(player, distance) {
+        // Aggressive shark-like behavior - always chase, burst speed when close
+        const burstDistance = 150;
+        const maxChaseDistance = 500;
+
+        if (distance < maxChaseDistance) {
+            const angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
+            let speedMult = 1;
+
+            // Burst of speed when getting close
+            if (distance < burstDistance) {
+                speedMult = 1.5;
+                // Frenzy visual effect
+                if (!this.inFrenzy) {
+                    this.inFrenzy = true;
+                    this.setTint(0xff6666);
+                }
+            } else {
+                if (this.inFrenzy) {
+                    this.inFrenzy = false;
+                    this.clearTint();
+                }
+            }
+
+            this.body.velocity.x = Math.cos(angle) * this.speed * speedMult;
+            this.body.velocity.y = Math.sin(angle) * this.speed * speedMult;
+        } else {
+            // Patrol when player is far
+            this.patrolBehavior();
+        }
+    }
+
+    patrolBehavior(time) {
+        // Move in a pattern, good for eels
+        if (!this.patrolPhase) this.patrolPhase = Math.random() * Math.PI * 2;
+        if (!this.patrolCenterX) {
+            this.patrolCenterX = this.x;
+            this.patrolCenterY = this.y;
+        }
+
+        this.patrolPhase += 0.02;
+        const patrolRadius = 100;
+
+        const targetX = this.patrolCenterX + Math.cos(this.patrolPhase) * patrolRadius;
+        const targetY = this.patrolCenterY + Math.sin(this.patrolPhase * 0.5) * patrolRadius * 0.5;
+
+        const angle = Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY);
+        this.body.velocity.x = Math.cos(angle) * this.speed * 0.7;
+        this.body.velocity.y = Math.sin(angle) * this.speed * 0.7;
     }
 
     attackPlayer(player, time) {
