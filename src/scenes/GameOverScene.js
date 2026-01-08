@@ -9,6 +9,8 @@ export class GameOverScene extends Phaser.Scene {
     init(data) {
         this.finalDNA = data.dna || { speed: 0, defense: 0, attack: 0, energy: 0 };
         this.finalEvolutions = data.evolutions || [];
+        this.finalScore = data.score || { total: 0, enemies: 0, dna: 0, evolutions: 0, biomes: 0, survival: 0 };
+        this.survivalTime = data.survivalTime || 0;
     }
 
     create() {
@@ -28,13 +30,13 @@ export class GameOverScene extends Phaser.Scene {
         this.createGameOverTitle(centerX);
 
         // Create animated dead fish
-        this.createDeadFish(centerX, 200);
+        this.createDeadFish(centerX, 170);
 
-        // Create stats panel with animations
-        this.createStatsPanel(centerX, 320);
+        // Create stats panel with animations (score breakdown)
+        this.createStatsPanel(centerX, 330);
 
         // Create evolution achievements
-        this.createEvolutionAchievements(centerX, 420);
+        this.createEvolutionAchievements(centerX, 460);
 
         // Create animated buttons
         this.createButtons(centerX);
@@ -253,59 +255,82 @@ export class GameOverScene extends Phaser.Scene {
         this.statsPanel = this.add.container(centerX, y);
         this.statsPanel.alpha = 0;
 
-        // Panel background
+        // Panel background - larger for score breakdown
         const panelBg = this.add.graphics();
-        panelBg.fillStyle(0x000000, 0.5);
-        panelBg.fillRoundedRect(-200, -60, 400, 120, 15);
-        panelBg.lineStyle(2, 0x445566, 0.6);
-        panelBg.strokeRoundedRect(-200, -60, 400, 120, 15);
+        panelBg.fillStyle(0x000000, 0.6);
+        panelBg.fillRoundedRect(-220, -80, 440, 180, 15);
+        panelBg.lineStyle(2, 0xffd700, 0.5);
+        panelBg.strokeRoundedRect(-220, -80, 440, 180, 15);
         this.statsPanel.add(panelBg);
 
-        // Stats title
-        const statsTitle = this.add.text(0, -40, '📊 RESUMEN DE PARTIDA', {
-            fontFamily: 'Arial',
+        // Main score title with trophy
+        const scoreTitle = this.add.text(0, -60, '🏆 PUNTAJE FINAL', {
+            fontFamily: 'Arial Black',
             fontSize: '18px',
-            fill: '#88aacc'
+            fill: '#ffd700'
         }).setOrigin(0.5);
-        this.statsPanel.add(statsTitle);
+        this.statsPanel.add(scoreTitle);
 
-        // DNA Total
-        const totalDNA = Object.values(this.finalDNA).reduce((a, b) => a + b, 0);
-        const totalText = this.add.text(0, -10, `ADN Total: ${totalDNA}`, {
-            fontFamily: 'Arial',
-            fontSize: '20px',
-            fill: '#ffffff'
+        // Big score number
+        const scoreValue = this.add.text(0, -25, this.finalScore.total.toLocaleString(), {
+            fontFamily: 'Arial Black',
+            fontSize: '36px',
+            fill: '#ffd700',
+            stroke: '#000000',
+            strokeThickness: 4
         }).setOrigin(0.5);
-        this.statsPanel.add(totalText);
+        this.statsPanel.add(scoreValue);
 
-        // Individual DNA stats with icons and colors
-        const dnaStats = [
-            { icon: '⚡', value: this.finalDNA.speed, color: 0x00ff88 },
-            { icon: '🛡️', value: this.finalDNA.defense, color: 0x4488ff },
-            { icon: '🔥', value: this.finalDNA.attack, color: 0xff4444 },
-            { icon: '💙', value: this.finalDNA.energy, color: 0xffaa00 }
+        // Score breakdown
+        const breakdown = [
+            { label: 'Enemigos', value: this.finalScore.enemies, icon: '🐟' },
+            { label: 'ADN', value: this.finalScore.dna, icon: '🧬' },
+            { label: 'Evoluciones', value: this.finalScore.evolutions, icon: '⬆️' },
+            { label: 'Biomas', value: this.finalScore.biomes, icon: '🌊' },
+            { label: 'Tiempo', value: this.finalScore.survival, icon: '⏱️' }
         ];
 
-        dnaStats.forEach((stat, i) => {
-            const xPos = -120 + i * 80;
+        breakdown.forEach((stat, i) => {
+            const xPos = -170 + i * 85;
 
-            // Background bar
-            const barBg = this.add.graphics();
-            barBg.fillStyle(0x222233, 0.8);
-            barBg.fillRoundedRect(xPos - 25, 20, 50, 30, 5);
-            this.statsPanel.add(barBg);
+            // Background box
+            const box = this.add.graphics();
+            box.fillStyle(0x1a1a2a, 0.9);
+            box.fillRoundedRect(xPos - 35, 15, 70, 55, 8);
+            box.lineStyle(1, 0x3a3a4a, 0.5);
+            box.strokeRoundedRect(xPos - 35, 15, 70, 55, 8);
+            this.statsPanel.add(box);
 
             // Icon
-            const icon = this.add.text(xPos, 27, stat.icon, { fontSize: '14px' }).setOrigin(0.5);
+            const icon = this.add.text(xPos, 28, stat.icon, { fontSize: '14px' }).setOrigin(0.5);
             this.statsPanel.add(icon);
 
             // Value
-            const value = this.add.text(xPos, 42, `${stat.value}`, {
-                fontSize: '12px',
+            const value = this.add.text(xPos, 45, stat.value.toLocaleString(), {
+                fontFamily: 'Arial',
+                fontSize: '14px',
                 fill: '#ffffff'
             }).setOrigin(0.5);
             this.statsPanel.add(value);
+
+            // Label
+            const label = this.add.text(xPos, 62, stat.label, {
+                fontSize: '9px',
+                fill: '#888899'
+            }).setOrigin(0.5);
+            this.statsPanel.add(label);
         });
+
+        // Survival time display
+        const minutes = Math.floor(this.survivalTime / 60);
+        const seconds = this.survivalTime % 60;
+        const timeStr = `Tiempo: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const timeText = this.add.text(0, 85, timeStr, {
+            fontFamily: 'Arial',
+            fontSize: '14px',
+            fill: '#88aacc'
+        }).setOrigin(0.5);
+        this.statsPanel.add(timeText);
     }
 
     createEvolutionAchievements(centerX, y) {
@@ -572,7 +597,7 @@ export class GameOverScene extends Phaser.Scene {
         this.deadFishContainer.y = -50;
         this.tweens.add({
             targets: this.deadFishContainer,
-            y: 200,
+            y: 170,
             alpha: 1,
             duration: 800,
             delay: 400,
@@ -583,7 +608,7 @@ export class GameOverScene extends Phaser.Scene {
         this.time.delayedCall(1200, () => {
             this.tweens.add({
                 targets: this.deadFishContainer,
-                y: 195,
+                y: 165,
                 rotation: Math.PI + 0.15,
                 duration: 2000,
                 yoyo: true,
@@ -593,10 +618,10 @@ export class GameOverScene extends Phaser.Scene {
         });
 
         // Stats panel slides in
-        this.statsPanel.y = 380;
+        this.statsPanel.y = 390;
         this.tweens.add({
             targets: this.statsPanel,
-            y: 320,
+            y: 330,
             alpha: 1,
             duration: 500,
             delay: 800,

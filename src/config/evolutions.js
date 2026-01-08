@@ -140,6 +140,22 @@ export const EVOLUTIONS = {
             color: 0xff6666
         }
     },
+    DASH_STRIKER: {
+        id: 'dash_striker',
+        name: 'Embestida Letal',
+        description: 'El dash hace daño a enemigos',
+        requirements: { speed: 35, attack: 25 },
+        effects: {
+            dashDamage: true,
+            dashDamageMultiplier: 0.8
+        },
+        visual: {
+            scaleX: 1.0,
+            scaleY: 0.9,
+            color: 0x00ccff,
+            trail: true
+        }
+    },
 
     // Tier 3 - Advanced evolutions (triple DNA or high requirements)
     VAMPIRE: {

@@ -3,7 +3,7 @@ export const BIOMES = {
         id: 'surface',
         name: 'Superficie',
         yStart: 0,
-        yEnd: 250,
+        yEnd: 450,
         colors: {
             top: 0x4a9fff,
             bottom: 0x2a7fff
@@ -17,8 +17,8 @@ export const BIOMES = {
     REEF: {
         id: 'reef',
         name: 'Arrecife de Coral',
-        yStart: 250,
-        yEnd: 500,
+        yStart: 450,
+        yEnd: 950,
         colors: {
             top: 0x20b2aa,
             bottom: 0x1a8a7a
@@ -32,8 +32,8 @@ export const BIOMES = {
     THERMOCLINE: {
         id: 'thermocline',
         name: 'Termoclina',
-        yStart: 500,
-        yEnd: 800,
+        yStart: 950,
+        yEnd: 1550,
         colors: {
             top: 0x1a6b8a,
             bottom: 0x0d4f6b
@@ -47,8 +47,8 @@ export const BIOMES = {
     BATHYAL: {
         id: 'bathyal',
         name: 'Zona Batial',
-        yStart: 800,
-        yEnd: 1150,
+        yStart: 1550,
+        yEnd: 2200,
         colors: {
             top: 0x1a2a4a,
             bottom: 0x0d1a2a
@@ -62,8 +62,8 @@ export const BIOMES = {
     ABYSS: {
         id: 'abyss',
         name: 'Abismo',
-        yStart: 1150,
-        yEnd: 1500,
+        yStart: 2200,
+        yEnd: 2800,
         colors: {
             top: 0x0a0a15,
             bottom: 0x050508

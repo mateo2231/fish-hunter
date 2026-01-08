@@ -513,6 +513,9 @@ export class EvolutionScene extends Phaser.Scene {
         // Apply evolution
         this.player.applyEvolution(evolution);
 
+        // Add evolution bonus score
+        this.gameScene.addEvolutionBonus();
+
         // Close after animation
         this.time.delayedCall(600, () => {
             this.closeMenu();

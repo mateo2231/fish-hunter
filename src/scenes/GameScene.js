@@ -11,9 +11,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
-        // World size
-        this.worldWidth = 2000;
-        this.worldHeight = 1500;
+        // World size (expanded)
+        this.worldWidth = 3500;
+        this.worldHeight = 2800;
 
         // Create ocean background
         this.createBackground();
@@ -65,6 +65,10 @@ export class GameScene extends Phaser.Scene {
         // Evolution key
         this.evolutionKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
+        // Dash key (Space or Shift)
+        this.dashKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.dashKeyShift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+
         // Can evolve flag
         this.canEvolve = false;
 
@@ -73,32 +77,119 @@ export class GameScene extends Phaser.Scene {
         this.biomeIndicator = null;
         this.createBiomeIndicator();
 
+        // === SCORING SYSTEM ===
+        this.score = {
+            total: 0,
+            enemies: 0,
+            dna: 0,
+            evolutions: 0,
+            biomes: 0,
+            survival: 0
+        };
+        this.visitedBiomes = new Set();
+        this.survivalSeconds = 0;
+
+        // Enemy point values
+        this.enemyPoints = {
+            COMMON: 10,
+            PUFFER: 25,
+            HUNTER: 30,
+            LUMINOUS: 20,
+            TOXIC: 35,
+            MUTANT: 50,
+            ANGLERFISH: 60,
+            SHARK: 80,
+            ELECTRIC_EEL: 45,
+            CAMOUFLAGE: 40,
+            JELLYFISH: 15
+        };
+
+        // Survival timer (adds 1 point per second)
+        this.survivalTimer = this.time.addEvent({
+            delay: 1000,
+            callback: this.updateSurvivalScore,
+            callbackScope: this,
+            loop: true
+        });
+
         // Create biome lighting overlay
         this.createBiomeLighting();
     }
 
     createBiomeIndicator() {
-        // Biome name indicator (top center)
-        this.biomeIndicator = this.add.container(400, 50);
+        // Biome name indicator (top center) - Enhanced design
+        this.biomeIndicator = this.add.container(400, 45);
         this.biomeIndicator.setScrollFactor(0);
         this.biomeIndicator.setDepth(100);
         this.biomeIndicator.setAlpha(0);
 
-        // Background
+        // Outer glow
+        this.biomeGlow = this.add.graphics();
+        this.biomeGlow.fillStyle(0x4488ff, 0.2);
+        this.biomeGlow.fillRoundedRect(-140, -28, 280, 56, 28);
+        this.biomeIndicator.add(this.biomeGlow);
+
+        // Main background with gradient effect
         const indicatorBg = this.add.graphics();
-        indicatorBg.fillStyle(0x000000, 0.6);
-        indicatorBg.fillRoundedRect(-120, -20, 240, 40, 12);
+        indicatorBg.fillStyle(0x0a1525, 0.85);
+        indicatorBg.fillRoundedRect(-130, -22, 260, 44, 22);
+        // Inner highlight
+        indicatorBg.fillStyle(0x1a3555, 0.6);
+        indicatorBg.fillRoundedRect(-126, -19, 252, 20, { tl: 18, tr: 18, bl: 0, br: 0 });
+        // Border
+        indicatorBg.lineStyle(2, 0x4488aa, 0.6);
+        indicatorBg.strokeRoundedRect(-130, -22, 260, 44, 22);
         this.biomeIndicator.add(indicatorBg);
 
+        // Decorative wave lines on sides
+        const waveLeft = this.add.graphics();
+        waveLeft.lineStyle(2, 0x4488ff, 0.4);
+        waveLeft.beginPath();
+        waveLeft.moveTo(-115, -5);
+        waveLeft.lineTo(-100, 0);
+        waveLeft.lineTo(-115, 5);
+        waveLeft.stroke();
+        this.biomeIndicator.add(waveLeft);
+
+        const waveRight = this.add.graphics();
+        waveRight.lineStyle(2, 0x4488ff, 0.4);
+        waveRight.beginPath();
+        waveRight.moveTo(115, -5);
+        waveRight.lineTo(100, 0);
+        waveRight.lineTo(115, 5);
+        waveRight.stroke();
+        this.biomeIndicator.add(waveRight);
+
+        // Biome icon (changes per biome)
+        this.biomeIcon = this.add.text(-85, 0, '🌊', { fontSize: '18px' }).setOrigin(0.5);
+        this.biomeIndicator.add(this.biomeIcon);
+
+        // Depth label
+        this.depthLabel = this.add.text(0, -8, 'ZONA', {
+            fontFamily: 'Arial',
+            fontSize: '9px',
+            fill: '#6699aa',
+            letterSpacing: 2
+        }).setOrigin(0.5);
+        this.biomeIndicator.add(this.depthLabel);
+
         // Biome name text
-        this.biomeNameText = this.add.text(0, 0, '', {
+        this.biomeNameText = this.add.text(0, 6, '', {
             fontFamily: 'Arial Black',
-            fontSize: '16px',
+            fontSize: '14px',
             fill: '#ffffff',
             stroke: '#000000',
-            strokeThickness: 2
+            strokeThickness: 1
         }).setOrigin(0.5);
         this.biomeIndicator.add(this.biomeNameText);
+
+        // Small depth indicator on right
+        this.depthText = this.add.text(85, 0, '', {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            fill: '#88aacc'
+        }).setOrigin(0.5);
+        this.biomeIndicator.add(this.depthText);
     }
 
     createBiomeLighting() {
@@ -110,59 +201,74 @@ export class GameScene extends Phaser.Scene {
     }
 
     updateBiomeLighting(brightness) {
+        // Vignette disabled - keeping biomes bright
         this.vignetteOverlay.clear();
-
-        if (brightness >= 1.0) return; // No overlay needed
-
-        const darkness = 1 - brightness;
-
-        // Create vignette effect
-        const width = 800;
-        const height = 600;
-        const centerX = width / 2;
-        const centerY = height / 2;
-
-        // Radial gradient vignette (darker at edges)
-        for (let i = 10; i > 0; i--) {
-            const ratio = i / 10;
-            const alpha = darkness * ratio * 0.7;
-            this.vignetteOverlay.fillStyle(0x000011, alpha);
-            this.vignetteOverlay.fillEllipse(centerX, centerY, width * (1.2 - ratio * 0.4), height * (1.2 - ratio * 0.4));
-        }
-
-        // Add subtle blue tint for deep water
-        if (brightness < 0.5) {
-            this.vignetteOverlay.fillStyle(0x000033, (0.5 - brightness) * 0.3);
-            this.vignetteOverlay.fillRect(0, 0, width, height);
-        }
     }
 
     showBiomeIndicator(biome) {
         if (this.currentBiome === biome.id) return;
 
+        // Add score bonus for new biome
+        this.addBiomeBonus(biome.id);
+
         this.currentBiome = biome.id;
-        this.biomeNameText.setText(biome.name);
+        this.biomeNameText.setText(biome.name.toUpperCase());
 
-        // Color based on biome
-        const biomeColors = {
-            surface: '#4a9fff',
-            reef: '#20b2aa',
-            thermocline: '#1a6b8a',
-            bathyal: '#6644aa',
-            abyss: '#aa4488'
+        // Biome-specific styling
+        const biomeStyles = {
+            surface: { color: '#4a9fff', icon: '☀️', glow: 0x4a9fff, depth: '0-450m' },
+            reef: { color: '#20b2aa', icon: '🪸', glow: 0x20b2aa, depth: '450-950m' },
+            thermocline: { color: '#1a6b8a', icon: '🌀', glow: 0x1a6b8a, depth: '950-1550m' },
+            bathyal: { color: '#8866cc', icon: '👁️', glow: 0x6644aa, depth: '1550-2200m' },
+            abyss: { color: '#ff66aa', icon: '🔮', glow: 0xaa4488, depth: '2200m+' }
         };
-        this.biomeNameText.setColor(biomeColors[biome.id] || '#ffffff');
 
-        // Fade in, stay, fade out
+        const style = biomeStyles[biome.id] || biomeStyles.surface;
+
+        // Update text color
+        this.biomeNameText.setColor(style.color);
+
+        // Update icon
+        this.biomeIcon.setText(style.icon);
+
+        // Update depth text
+        this.depthText.setText(style.depth);
+
+        // Update glow color
+        this.biomeGlow.clear();
+        this.biomeGlow.fillStyle(style.glow, 0.25);
+        this.biomeGlow.fillRoundedRect(-140, -28, 280, 56, 28);
+
+        // Fade in, stay, fade out with scale effect
         this.tweens.killTweensOf(this.biomeIndicator);
         this.biomeIndicator.setAlpha(0);
+        this.biomeIndicator.setScale(0.8);
+
         this.tweens.add({
             targets: this.biomeIndicator,
             alpha: 1,
+            scale: 1,
+            duration: 400,
+            ease: 'Back.out',
+            onComplete: () => {
+                this.tweens.add({
+                    targets: this.biomeIndicator,
+                    alpha: 0,
+                    scale: 0.9,
+                    duration: 300,
+                    delay: 2500,
+                    ease: 'Sine.in'
+                });
+            }
+        });
+
+        // Pulse glow animation
+        this.tweens.add({
+            targets: this.biomeGlow,
+            alpha: 0.4,
             duration: 300,
-            hold: 2000,
             yoyo: true,
-            ease: 'Sine.inOut'
+            repeat: 2
         });
 
         // Update lighting
@@ -170,23 +276,58 @@ export class GameScene extends Phaser.Scene {
     }
 
     createBackground() {
-        // Biome-layered background
+        // Biome-layered background with smooth transitions
         const bg = this.add.graphics();
 
-        // Draw each biome's gradient
-        for (const biomeKey of BIOME_ORDER) {
-            const biome = BIOMES[biomeKey];
-            const topColor = Phaser.Display.Color.IntegerToColor(biome.colors.top);
-            const bottomColor = Phaser.Display.Color.IntegerToColor(biome.colors.bottom);
+        const transitionSize = 50; // Pixels for transition between biomes
 
-            for (let y = biome.yStart; y < biome.yEnd; y += 4) {
-                const ratio = (y - biome.yStart) / (biome.yEnd - biome.yStart);
-                const r = Math.floor(topColor.red + (bottomColor.red - topColor.red) * ratio);
-                const g = Math.floor(topColor.green + (bottomColor.green - topColor.green) * ratio);
-                const b = Math.floor(topColor.blue + (bottomColor.blue - topColor.blue) * ratio);
-                bg.fillStyle(Phaser.Display.Color.GetColor(r, g, b), 1);
-                bg.fillRect(0, y, this.worldWidth, 4);
+        // Draw continuous gradient across all biomes
+        for (let y = 0; y < this.worldHeight; y += 4) {
+            let r, g, b;
+
+            // Find which biome(s) this Y is in
+            const biomeIndex = BIOME_ORDER.findIndex(key => {
+                const biome = BIOMES[key];
+                return y >= biome.yStart && y < biome.yEnd;
+            });
+
+            const currentBiomeKey = BIOME_ORDER[biomeIndex] || BIOME_ORDER[BIOME_ORDER.length - 1];
+            const currentBiome = BIOMES[currentBiomeKey];
+            const nextBiomeKey = BIOME_ORDER[biomeIndex + 1];
+            const nextBiome = nextBiomeKey ? BIOMES[nextBiomeKey] : null;
+
+            const topColor = Phaser.Display.Color.IntegerToColor(currentBiome.colors.top);
+            const bottomColor = Phaser.Display.Color.IntegerToColor(currentBiome.colors.bottom);
+
+            // Calculate position within current biome
+            const biomeProgress = (y - currentBiome.yStart) / (currentBiome.yEnd - currentBiome.yStart);
+
+            // Check if we're in transition zone to next biome
+            const distanceToEnd = currentBiome.yEnd - y;
+
+            if (nextBiome && distanceToEnd < transitionSize) {
+                // Blend with next biome
+                const blendFactor = 1 - (distanceToEnd / transitionSize);
+                const nextTopColor = Phaser.Display.Color.IntegerToColor(nextBiome.colors.top);
+
+                // Current biome color at this point
+                const currR = topColor.red + (bottomColor.red - topColor.red) * biomeProgress;
+                const currG = topColor.green + (bottomColor.green - topColor.green) * biomeProgress;
+                const currB = topColor.blue + (bottomColor.blue - topColor.blue) * biomeProgress;
+
+                // Blend with next biome's top color
+                r = Math.floor(currR + (nextTopColor.red - currR) * blendFactor);
+                g = Math.floor(currG + (nextTopColor.green - currG) * blendFactor);
+                b = Math.floor(currB + (nextTopColor.blue - currB) * blendFactor);
+            } else {
+                // Normal gradient within biome
+                r = Math.floor(topColor.red + (bottomColor.red - topColor.red) * biomeProgress);
+                g = Math.floor(topColor.green + (bottomColor.green - topColor.green) * biomeProgress);
+                b = Math.floor(topColor.blue + (bottomColor.blue - topColor.blue) * biomeProgress);
             }
+
+            bg.fillStyle(Phaser.Display.Color.GetColor(r, g, b), 1);
+            bg.fillRect(0, y, this.worldWidth, 4);
         }
 
         // Add light rays from surface (only in surface biome)
@@ -1185,6 +1326,12 @@ export class GameScene extends Phaser.Scene {
         // Create status bars panel (top-left)
         this.createStatusBarsPanel();
 
+        // Create dash cooldown bar (below status bars)
+        this.createDashCooldownBar();
+
+        // Create score panel (top-right)
+        this.createScorePanel();
+
         // Create DNA panel (bottom)
         this.createDNAPanel();
 
@@ -1278,6 +1425,106 @@ export class GameScene extends Phaser.Scene {
             stroke: '#000000',
             strokeThickness: 2
         }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    }
+
+    createDashCooldownBar() {
+        // Dash bar container (below status bars)
+        const dashBarY = 105;
+
+        // Panel background
+        const dashPanelBg = this.add.graphics();
+        dashPanelBg.fillStyle(0x000000, 0.6);
+        dashPanelBg.fillRoundedRect(10, dashBarY, 220, 35, 8);
+        dashPanelBg.lineStyle(1, 0x00ccff, 0.4);
+        dashPanelBg.strokeRoundedRect(10, dashBarY, 220, 35, 8);
+        dashPanelBg.setScrollFactor(0).setDepth(100);
+
+        // Dash icon/label
+        this.add.text(20, dashBarY + 17, '💨', { fontSize: '16px' }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(100);
+
+        this.add.text(42, dashBarY + 10, 'DASH', {
+            fontFamily: 'Arial Black',
+            fontSize: '9px',
+            fill: '#00ccff'
+        }).setScrollFactor(0).setDepth(100);
+
+        // Key hint
+        this.add.text(42, dashBarY + 22, '[ESPACIO]', {
+            fontFamily: 'Arial',
+            fontSize: '8px',
+            fill: '#888888'
+        }).setScrollFactor(0).setDepth(100);
+
+        // Cooldown bar background
+        this.dashBarBg = this.add.graphics();
+        this.dashBarBg.fillStyle(0x1a1a2a, 1);
+        this.dashBarBg.fillRoundedRect(105, dashBarY + 8, 115, 18, 4);
+        this.dashBarBg.lineStyle(1, 0x333344, 1);
+        this.dashBarBg.strokeRoundedRect(105, dashBarY + 8, 115, 18, 4);
+        this.dashBarBg.setScrollFactor(0).setDepth(100);
+
+        // Cooldown bar fill
+        this.dashBar = this.add.graphics();
+        this.dashBar.setScrollFactor(0).setDepth(100);
+
+        // Ready text
+        this.dashReadyText = this.add.text(162, dashBarY + 17, 'LISTO', {
+            fontFamily: 'Arial Black',
+            fontSize: '10px',
+            fill: '#00ffff',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    }
+
+    createScorePanel() {
+        // Score panel background (top-right)
+        const scorePanelBg = this.add.graphics();
+        scorePanelBg.fillStyle(0x000000, 0.6);
+        scorePanelBg.fillRoundedRect(620, 10, 170, 50, 12);
+        scorePanelBg.lineStyle(2, 0xffd700, 0.4);
+        scorePanelBg.strokeRoundedRect(620, 10, 170, 50, 12);
+        scorePanelBg.setScrollFactor(0).setDepth(100);
+
+        // Panel highlight
+        const scoreHighlight = this.add.graphics();
+        scoreHighlight.fillStyle(0xffd700, 0.08);
+        scoreHighlight.fillRoundedRect(622, 12, 166, 20, { tl: 10, tr: 10, bl: 0, br: 0 });
+        scoreHighlight.setScrollFactor(0).setDepth(100);
+
+        // Trophy icon with glow
+        const trophyGlow = this.add.graphics();
+        trophyGlow.fillStyle(0xffd700, 0.3);
+        trophyGlow.fillCircle(645, 35, 16);
+        trophyGlow.setScrollFactor(0).setDepth(100);
+        this.trophyGlow = trophyGlow;
+
+        this.add.text(645, 35, '🏆', { fontSize: '20px' }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+
+        // Score label
+        this.add.text(670, 18, 'PUNTAJE', {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            fill: '#ffd700'
+        }).setScrollFactor(0).setDepth(100);
+
+        // Score value
+        this.scoreText = this.add.text(705, 42, '0', {
+            fontFamily: 'Arial Black',
+            fontSize: '22px',
+            fill: '#ffd700',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+
+        // Score popup text (for showing points gained)
+        this.scorePopup = this.add.text(705, 60, '', {
+            fontFamily: 'Arial',
+            fontSize: '12px',
+            fill: '#00ff00',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(100).setAlpha(0);
     }
 
     createDNAPanel() {
@@ -1414,6 +1661,33 @@ export class GameScene extends Phaser.Scene {
             this.hungerGlow.setAlpha(0.5 + Math.sin(Date.now() * 0.008) * 0.3);
         } else {
             this.hungerGlow.setAlpha(0.3);
+        }
+
+        // === DASH COOLDOWN BAR (updates every frame) ===
+        const dashPercent = this.player.getDashCooldownPercent();
+        const dashBarY = 105;
+        this.dashBar.clear();
+
+        if (dashPercent >= 1) {
+            // Ready - full cyan bar with pulse
+            const pulse = 0.8 + Math.sin(Date.now() * 0.005) * 0.2;
+            this.dashBar.fillStyle(0x00ffff, pulse);
+            this.dashBar.fillRoundedRect(107, dashBarY + 10, 111, 14, 3);
+            this.dashBar.fillStyle(0x88ffff, 0.5);
+            this.dashBar.fillRoundedRect(107, dashBarY + 10, 111, 6, { tl: 3, tr: 3, bl: 0, br: 0 });
+            this.dashReadyText.setText('LISTO');
+            this.dashReadyText.setFill('#00ffff');
+        } else {
+            // Cooldown - partial bar
+            const dashWidth = 111 * dashPercent;
+            if (dashWidth > 2) {
+                this.dashBar.fillStyle(0x006688, 1);
+                this.dashBar.fillRoundedRect(107, dashBarY + 10, dashWidth, 14, 3);
+                this.dashBar.fillStyle(0x00aacc, 1);
+                this.dashBar.fillRoundedRect(107, dashBarY + 10, dashWidth, 6, { tl: 3, tr: 3, bl: 0, br: 0 });
+            }
+            this.dashReadyText.setText(`${Math.ceil((1 - dashPercent) * 5)}s`);
+            this.dashReadyText.setFill('#888888');
         }
 
         // Skip expensive redraws if not dirty
@@ -1655,8 +1929,18 @@ export class GameScene extends Phaser.Scene {
             // Restore hunger
             this.player.feed(reward.hungerRestore);
 
-            // Show floating text
-            this.showFloatingText(enemy.x, enemy.y - 20, `+${reward.dnaAmount} ADN`, '#00ff00');
+            // === ADD SCORE ===
+            // Points for eating enemy
+            const enemyPoints = this.enemyPoints[enemy.type] || 10;
+            this.addScore(enemyPoints, 'enemies');
+
+            // Points for DNA collected (5 per DNA unit)
+            const dnaPoints = reward.dnaAmount * 5;
+            this.addScore(dnaPoints, 'dna');
+
+            // Show floating text with total points
+            const totalPoints = enemyPoints + dnaPoints;
+            this.showFloatingText(enemy.x, enemy.y - 20, `+${totalPoints}`, '#ffd700');
 
             // Remove enemy
             const index = this.enemies.indexOf(enemy);
@@ -1667,6 +1951,108 @@ export class GameScene extends Phaser.Scene {
         });
 
         this.updateHUD();
+    }
+
+    checkDashDamage() {
+        const dashDamage = this.player.getDashDamage();
+        if (dashDamage <= 0) return;
+
+        const playerX = this.player.x;
+        const playerY = this.player.y;
+        const dashRadius = 35; // Collision radius during dash
+
+        this.enemies.forEach(enemy => {
+            // Skip if already hit during this dash
+            if (this.player.dashHitEnemies.has(enemy)) return;
+
+            // Check distance
+            const dx = enemy.x - playerX;
+            const dy = enemy.y - playerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < dashRadius + 20) {
+                // Mark as hit
+                this.player.dashHitEnemies.add(enemy);
+
+                // Deal damage
+                enemy.takeDamage(dashDamage);
+
+                // Create impact effect
+                this.createDashImpactEffect(enemy.x, enemy.y);
+
+                // Show damage text
+                this.showFloatingText(enemy.x, enemy.y - 30, `${Math.floor(dashDamage)}`, '#00ffff');
+
+                // Check if enemy died
+                if (enemy.isDead && enemy.isDead()) {
+                    const reward = enemy.getReward();
+
+                    // Create eat particles
+                    this.createEatParticles(enemy.x, enemy.y, reward.dnaType);
+
+                    // Collect DNA
+                    this.player.collectDNA(reward.dnaType, reward.dnaAmount);
+
+                    // Restore hunger
+                    this.player.feed(reward.hungerRestore);
+
+                    // Add score
+                    const enemyPoints = this.enemyPoints[enemy.type] || 10;
+                    this.addScore(enemyPoints, 'enemies');
+                    const dnaPoints = reward.dnaAmount * 5;
+                    this.addScore(dnaPoints, 'dna');
+
+                    // Remove enemy
+                    const index = this.enemies.indexOf(enemy);
+                    if (index > -1) {
+                        this.enemies.splice(index, 1);
+                    }
+                    enemy.destroy();
+                }
+            }
+        });
+    }
+
+    createDashImpactEffect(x, y) {
+        // Impact ring
+        const ring = this.add.graphics();
+        ring.lineStyle(3, 0x00ffff, 1);
+        ring.strokeCircle(0, 0, 10);
+        ring.x = x;
+        ring.y = y;
+
+        this.tweens.add({
+            targets: ring,
+            scale: 3,
+            alpha: 0,
+            duration: 200,
+            onComplete: () => ring.destroy()
+        });
+
+        // Spark particles
+        for (let i = 0; i < 6; i++) {
+            const spark = this.add.graphics();
+            spark.fillStyle(0x00ffff, 1);
+            spark.fillCircle(0, 0, 3);
+            spark.x = x;
+            spark.y = y;
+
+            const angle = (i / 6) * Math.PI * 2;
+            const speed = 60;
+
+            this.tweens.add({
+                targets: spark,
+                x: x + Math.cos(angle) * speed,
+                y: y + Math.sin(angle) * speed,
+                alpha: 0,
+                scale: 0,
+                duration: 200,
+                onComplete: () => spark.destroy()
+            });
+        }
+
+        // Camera shake
+        this.cameras.main.shake(50, 0.002);
     }
 
     showFloatingText(x, y, text, color) {
@@ -1908,10 +2294,20 @@ export class GameScene extends Phaser.Scene {
         // Update player
         this.player.update(time, delta);
 
+        // Handle dash input
+        if (Phaser.Input.Keyboard.JustDown(this.dashKey) || Phaser.Input.Keyboard.JustDown(this.dashKeyShift)) {
+            this.player.dash();
+        }
+
         // Update enemies
         this.enemies.forEach(enemy => {
             enemy.update(time, delta, this.player);
         });
+
+        // Check for dash damage
+        if (this.player.canDashDamage()) {
+            this.checkDashDamage();
+        }
 
         // Update HUD
         this.updateHUD();
@@ -1939,12 +2335,77 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    // === SCORING METHODS ===
+    addScore(amount, category) {
+        this.score[category] += amount;
+        this.score.total += amount;
+        this.updateScoreDisplay(amount);
+    }
+
+    updateScoreDisplay(pointsGained = 0) {
+        // Update score text with formatting
+        this.scoreText.setText(this.score.total.toLocaleString());
+
+        // Animate score text pop
+        this.tweens.add({
+            targets: this.scoreText,
+            scale: 1.2,
+            duration: 100,
+            yoyo: true,
+            ease: 'Quad.out'
+        });
+
+        // Show points gained popup
+        if (pointsGained > 0) {
+            this.scorePopup.setText(`+${pointsGained}`);
+            this.scorePopup.setAlpha(1);
+            this.scorePopup.y = 60;
+
+            this.tweens.add({
+                targets: this.scorePopup,
+                y: 45,
+                alpha: 0,
+                duration: 600,
+                ease: 'Quad.out'
+            });
+        }
+
+        // Pulse trophy glow
+        this.tweens.add({
+            targets: this.trophyGlow,
+            alpha: 0.8,
+            duration: 150,
+            yoyo: true
+        });
+    }
+
+    updateSurvivalScore() {
+        this.survivalSeconds++;
+        this.addScore(1, 'survival');
+    }
+
+    addBiomeBonus(biomeId) {
+        if (!this.visitedBiomes.has(biomeId)) {
+            this.visitedBiomes.add(biomeId);
+            this.addScore(150, 'biomes');
+            this.showFloatingText(this.player.x, this.player.y - 50, '+150 ¡Nuevo Bioma!', '#ffd700');
+        }
+    }
+
+    addEvolutionBonus() {
+        this.addScore(200, 'evolutions');
+        this.showFloatingText(this.player.x, this.player.y - 50, '+200 ¡Evolución!', '#00ff88');
+    }
+
     gameOver() {
         this.hungerTimer.remove();
         this.spawnTimer.remove();
+        this.survivalTimer.remove();
         this.scene.start('GameOverScene', {
             dna: { ...this.player.dna },
-            evolutions: [...this.player.evolutions]
+            evolutions: [...this.player.evolutions],
+            score: { ...this.score },
+            survivalTime: this.survivalSeconds
         });
     }
 }
